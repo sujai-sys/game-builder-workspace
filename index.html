@@ -1,9 +1,10 @@
-<!DOCTYPE html>
-<html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Game Builder Workspace</title>
+  <title>Game Studio + ChatKit</title>
+  <script src="https://cdn.platform.openai.com/deployments/chatkit/chatkit.js" async></script>
   <style>
     :root {
       color-scheme: dark;
@@ -11,9 +12,14 @@
       --panel: #11182d;
       --panel-soft: #18213b;
       --panel-alt: #0d1427;
+      --bg: #09101f;
+      --panel: rgba(17, 24, 45, 0.94);
+      --panel-soft: #17213d;
+      --panel-alt: #0d1428;
       --border: rgba(255, 255, 255, 0.08);
       --text: #edf2ff;
       --muted: #90a0c2;
+      --muted: #93a4c8;
       --accent: #55e0c6;
       --accent-strong: #2fc5ab;
       --danger: #ff7a7a;
@@ -22,27 +28,17 @@
       --sidebar: 260px;
       --preview: minmax(360px, 1.1fr);
       --tooling: minmax(520px, 1.4fr);
+      --sidebar: 250px;
+      --center: minmax(560px, 1.4fr);
+      --chat: minmax(360px, 0.95fr);
       --font: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
     }
 
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      margin: 0;
-      min-height: 100vh;
-      font-family: var(--font);
-      color: var(--text);
-      background:
-        radial-gradient(circle at top left, rgba(85, 224, 198, 0.12), transparent 24%),
-        radial-gradient(circle at bottom right, rgba(67, 97, 238, 0.15), transparent 28%),
-        linear-gradient(145deg, #060912 0%, var(--bg) 50%, #0b1734 100%);
-    }
 
     .app {
       display: grid;
       grid-template-columns: var(--sidebar) var(--tooling) var(--preview);
+      grid-template-columns: var(--sidebar) var(--center) var(--chat);
       gap: 18px;
       min-height: 100vh;
       padding: 18px;
@@ -50,119 +46,80 @@
 
     .panel {
       background: rgba(17, 24, 45, 0.94);
+      background: var(--panel);
       border: 1px solid var(--border);
       border-radius: var(--radius);
       box-shadow: var(--shadow);
-      backdrop-filter: blur(14px);
-      min-height: 0;
       overflow: hidden;
     }
 
     .sidebar {
+    .sidebar,
+    .builder,
+    .chatkit-panel {
       display: flex;
       flex-direction: column;
+      gap: 16px;
       padding: 18px;
       gap: 16px;
+      min-height: 0;
     }
 
     .title-row {
+    .top-row {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 12px;
+      gap: 10px;
     }
 
     h1,
-    h2,
-    h3,
-    p {
-      margin: 0;
-    }
-
-    h1 {
-      font-size: 1.05rem;
-    }
-
-    h2 {
       font-size: 1rem;
+    }
+
+    h3 {
+      font-size: 0.96rem;
     }
 
     p,
     label,
     .hint,
     .project-meta {
+    .project-meta,
+    li {
       color: var(--muted);
       line-height: 1.45;
     }
-
-    .button,
-    .ghost-button {
-      appearance: none;
-      border: 0;
       border-radius: 14px;
       font: inherit;
       cursor: pointer;
       transition: transform 0.16s ease, opacity 0.16s ease, background 0.16s ease;
+      transition: transform 0.16s ease, opacity 0.16s ease, background 0.16s ease, border-color 0.16s ease;
     }
 
     .button:hover,
-    .ghost-button:hover {
-      transform: translateY(-1px);
-    }
-
-    .button {
-      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
-      color: #041411;
-      font-weight: 700;
-      padding: 12px 14px;
-    }
-
-    .ghost-button {
-      background: var(--panel-soft);
-      color: var(--text);
-      border: 1px solid var(--border);
-      padding: 11px 14px;
-    }
-
-    .projects {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      overflow: auto;
-      padding-right: 4px;
-    }
-
-    .project-card {
-      width: 100%;
-      text-align: left;
-      border: 1px solid transparent;
-      border-radius: 16px;
-      background: rgba(255, 255, 255, 0.03);
-      padding: 14px;
-      color: var(--text);
-      cursor: pointer;
-      transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease;
-    }
-
-    .project-card.active {
-      border-color: rgba(85, 224, 198, 0.45);
-      background: rgba(85, 224, 198, 0.1);
-    }
-
-    .project-card:hover {
-      transform: translateX(2px);
       border-color: rgba(255, 255, 255, 0.12);
     }
 
     .workspace {
+    .status,
+    .card,
+    .chatkit-box {
       display: flex;
       flex-direction: column;
       gap: 16px;
       padding: 18px;
+      gap: 12px;
+      padding: 16px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border);
     }
 
     .status {
       display: flex;
+      flex-direction: row;
       align-items: center;
       justify-content: space-between;
       gap: 12px;
@@ -173,18 +130,18 @@
     }
 
     .status strong {
-      font-size: 0.95rem;
-    }
-
-    .status-error {
       color: var(--danger);
     }
 
     .tool-grid {
       display: grid;
       grid-template-columns: 1fr;
+    .preview-stage {
+      display: flex;
+      flex-direction: column;
       gap: 16px;
       min-height: 0;
+      flex: 1;
     }
 
     .card {
@@ -194,47 +151,41 @@
       padding: 16px;
       border-radius: 18px;
       background: rgba(255, 255, 255, 0.03);
+    .preview-frame {
+      width: 100%;
+      min-height: 500px;
       border: 1px solid var(--border);
+      border-radius: 18px;
+      background: #020617;
     }
 
     .card-header {
       display: flex;
       flex-direction: column;
       gap: 4px;
+    .empty-preview {
+      display: grid;
+      place-items: center;
+      min-height: 500px;
+      border: 1px dashed var(--border);
+      border-radius: 18px;
+      text-align: center;
+      padding: 30px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.04), transparent);
+    }
+
+    .empty-preview strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 1.65rem;
     }
 
     .field {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .action-row {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    input,
-    textarea {
-      width: 100%;
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      background: var(--panel-alt);
-      color: var(--text);
-      padding: 12px 13px;
-      font: inherit;
-      outline: none;
-    }
-
-    input:focus,
-    textarea:focus {
-      border-color: rgba(85, 224, 198, 0.4);
-      box-shadow: 0 0 0 4px rgba(85, 224, 198, 0.08);
     }
 
     textarea {
       min-height: 260px;
+      min-height: 220px;
       resize: vertical;
       font-family: Consolas, monospace;
       font-size: 0.92rem;
@@ -246,13 +197,32 @@
       border: 1px solid var(--border);
       border-radius: 16px;
       background: #020617;
+    .chatkit-shell {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-height: 0;
+      flex: 1;
+    }
+
+    .chatkit-mount {
+      min-height: 420px;
+      border-radius: 18px;
+      border: 1px dashed var(--border);
+      background:
+        radial-gradient(circle at top right, rgba(85, 224, 198, 0.1), transparent 28%),
+        linear-gradient(180deg, rgba(255,255,255,0.04), transparent);
+      padding: 18px;
+      overflow: auto;
     }
 
     .preview {
+    .chatkit-placeholder {
       display: flex;
       flex-direction: column;
       gap: 16px;
       padding: 18px;
+      gap: 14px;
     }
 
     .preview-frame {
@@ -262,6 +232,10 @@
       border: 1px solid var(--border);
       border-radius: 18px;
       background: #020617;
+    .chatkit-placeholder ol,
+    .chatkit-placeholder ul {
+      margin: 0;
+      padding-left: 18px;
     }
 
     .empty-preview {
@@ -273,20 +247,38 @@
       text-align: center;
       padding: 30px;
       background: linear-gradient(180deg, rgba(255,255,255,0.04), transparent);
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(85, 224, 198, 0.12);
+      color: var(--text);
+      border: 1px solid rgba(85, 224, 198, 0.2);
+      width: fit-content;
+      font-size: 0.88rem;
     }
 
     .empty-preview strong {
       display: block;
       margin-bottom: 8px;
       font-size: 1.8rem;
+    code {
+      font-family: Consolas, monospace;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      padding: 2px 6px;
     }
 
     @media (max-width: 1200px) {
+    @media (max-width: 1260px) {
       .app {
         grid-template-columns: var(--sidebar) 1fr;
         grid-template-areas:
           "sidebar workspace"
           "preview preview";
+          "sidebar builder"
+          "chat chat";
       }
 
       .sidebar {
@@ -295,28 +287,27 @@
 
       .workspace {
         grid-area: workspace;
+      .builder {
+        grid-area: builder;
       }
 
       .preview {
         grid-area: preview;
+      .chatkit-panel {
+        grid-area: chat;
       }
     }
 
-    @media (max-width: 760px) {
-      .app {
         grid-template-columns: 1fr;
         grid-template-areas:
           "sidebar"
           "workspace"
           "preview";
+          "builder"
+          "chat";
         padding: 12px;
       }
 
-      .action-row {
-        flex-direction: column;
-      }
-
-      .button,
       .ghost-button {
         width: 100%;
       }
@@ -333,8 +324,10 @@
   <div class="app">
     <aside class="panel sidebar">
       <div class="title-row">
+      <div class="top-row">
         <div>
           <h1>Game Builder</h1>
+          <h1>Game Studio</h1>
           <p>Projects</p>
         </div>
       </div>
@@ -345,23 +338,34 @@
     </aside>
 
     <main class="panel workspace">
+    <main class="panel builder">
       <div class="status">
         <div>
           <strong id="statusText">Ready</strong>
           <p id="statusHint">Paste a website URL or game code.</p>
+          <p id="statusHint">Paste HTML game code below and render it.</p>
         </div>
         <p id="projectLabel">No project selected</p>
       </div>
 
       <div class="tool-grid">
+      <div class="preview-stage">
         <section class="card">
           <div class="card-header">
             <h2>URL Section</h2>
             <p>Paste a website URL here. If the website blocks embedding, use the new tab button.</p>
+          <div>
+            <h2>Game Output</h2>
+            <p>The main game preview appears here.</p>
           </div>
           <div class="field">
             <label for="urlInput">Website URL</label>
             <input id="urlInput" type="url" placeholder="https://chatgpt.com/">
+          <div class="empty-preview" id="emptyPreview">
+            <div>
+              <strong>Preview Ready</strong>
+              <p>Paste HTML game code and click Render.</p>
+            </div>
           </div>
           <div class="action-row">
             <button class="button" id="openUrlButton" type="button">Open URL</button>
@@ -369,22 +373,23 @@
           </div>
           <iframe class="mini-browser" id="miniBrowserFrame" title="Mini browser" sandbox="allow-scripts allow-forms allow-popups allow-same-origin"></iframe>
           <p class="hint">Major AI websites like ChatGPT often block loading inside mini browser windows. If it stays blank, that is the site blocking iframe embedding.</p>
+          <iframe class="preview-frame" id="previewFrame" title="Game preview" sandbox="allow-scripts allow-pointer-lock" hidden></iframe>
         </section>
 
         <section class="card">
           <div class="card-header">
+          <div>
             <h2>Programming Render</h2>
             <p>Paste full HTML, a ```html block, or even a plain URL. Render will load it into the preview.</p>
+            <p>Scroll here, paste your HTML/CSS/JS, then use Render or Clear.</p>
           </div>
           <div class="field">
             <label for="codeInput">HTML / CSS / JS</label>
             <textarea id="codeInput" placeholder="Paste a full HTML document here..."></textarea>
+            <textarea id="codeInput" placeholder="Paste a full HTML document or a ```html block here..."></textarea>
           </div>
           <div class="action-row">
             <button class="button" id="renderButton" type="button">Render</button>
-            <button class="ghost-button" id="clearButton" type="button">Clear</button>
-          </div>
-        </section>
       </div>
     </main>
 
@@ -394,21 +399,59 @@
         <p>The rendered game or app appears here.</p>
       </div>
       <div class="empty-preview" id="emptyPreview">
+    <section class="panel chatkit-panel">
+      <div class="top-row">
         <div>
           <strong>Preview Ready</strong>
           <p>Paste game code and click Render.</p>
+          <h2>ChatKit Layer</h2>
+          <p>Right-side area reserved for your ChatKit assistant.</p>
         </div>
       </div>
       <iframe class="preview-frame" id="previewFrame" title="Game preview" sandbox="allow-scripts allow-pointer-lock" hidden></iframe>
+
+      <div class="chatkit-shell">
+        <section class="chatkit-box">
+          <div class="field">
+            <label for="chatkitEndpointInput">ChatKit session endpoint</label>
+            <input id="chatkitEndpointInput" type="text" placeholder="/api/chatkit/session or your backend URL">
+          </div>
+          <div class="action-row">
+            <button class="button" id="saveChatkitButton" type="button">Save ChatKit Endpoint</button>
+            <button class="ghost-button" id="resetChatkitButton" type="button">Reset</button>
+          </div>
+          <p class="hint">ChatKit needs a backend session endpoint. GitHub Pages alone cannot create ChatKit sessions because the secret key must stay on a server.</p>
+        </section>
+
+        <section class="chatkit-mount" id="chatkitMount">
+          <div class="chatkit-placeholder" id="chatkitPlaceholder">
+            <span class="pill">ChatKit Frontend Ready</span>
+            <h3>How to finish ChatKit</h3>
+            <ol>
+              <li>Create an OpenAI workflow in Agent Builder and copy the workflow ID.</li>
+              <li>Create a backend endpoint at <code>/api/chatkit/session</code> that calls <code>POST /v1/chatkit/sessions</code>.</li>
+              <li>Return the <code>client_secret</code> from that backend to this site.</li>
+              <li>Point the saved endpoint above to that backend URL.</li>
+            </ol>
+            <p>Your frontend layout is ready now. The missing piece is the backend session creator.</p>
+            <ul>
+              <li>Workflow backend: OpenAI Agent Builder workflow</li>
+              <li>Session endpoint needed: <code>POST /api/chatkit/session</code></li>
+              <li>Unique user id required by OpenAI for each user session</li>
+            </ul>
+            <p id="chatkitStatusText">No ChatKit session endpoint saved yet.</p>
+          </div>
+        </section>
+      </div>
     </section>
   </div>
 
   <script>
     const STORAGE_KEY = "game-builder-workspace-v2";
+    const STORAGE_KEY = "game-studio-chatkit-v1";
 
     const els = {
       newProjectButton: document.getElementById("newProjectButton"),
-      projectsList: document.getElementById("projectsList"),
       statusText: document.getElementById("statusText"),
       statusHint: document.getElementById("statusHint"),
       projectLabel: document.getElementById("projectLabel"),
@@ -421,13 +464,14 @@
       clearButton: document.getElementById("clearButton"),
       emptyPreview: document.getElementById("emptyPreview"),
       previewFrame: document.getElementById("previewFrame")
+      previewFrame: document.getElementById("previewFrame"),
+      chatkitEndpointInput: document.getElementById("chatkitEndpointInput"),
+      saveChatkitButton: document.getElementById("saveChatkitButton"),
+      resetChatkitButton: document.getElementById("resetChatkitButton"),
+      chatkitStatusText: document.getElementById("chatkitStatusText")
     };
 
     const state = loadState();
-
-    function createProject(title = "New Project") {
-      const now = new Date().toISOString();
-      return {
         id: crypto.randomUUID(),
         title,
         updatedAt: now,
@@ -435,13 +479,6 @@
         code: "",
         renderedCode: ""
       };
-    }
-
-    function loadState() {
-      try {
-        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
-        const projects = Array.isArray(saved.projects) && saved.projects.length
-          ? saved.projects.map((project, index) => ({
               id: project.id || crypto.randomUUID(),
               title: project.title || `Project ${index + 1}`,
               updatedAt: project.updatedAt || new Date().toISOString(),
@@ -449,50 +486,33 @@
               code: project.code || "",
               renderedCode: project.renderedCode || ""
             }))
-          : [createProject("Project 1")];
-
-        const activeProjectId = projects.some((project) => project.id === saved.activeProjectId)
           ? saved.activeProjectId
           : projects[0].id;
 
         return { projects, activeProjectId };
+        return {
+          projects,
+          activeProjectId,
+          chatkitEndpoint: saved.chatkitEndpoint || ""
+        };
       } catch (error) {
         return {
           projects: [createProject("Project 1")],
           activeProjectId: null
+          activeProjectId: null,
+          chatkitEndpoint: ""
         };
       }
     }
-
     function saveState() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
         projects: state.projects,
         activeProjectId: state.activeProjectId
+        activeProjectId: state.activeProjectId,
+        chatkitEndpoint: state.chatkitEndpoint
       }));
     }
 
-    function getActiveProject() {
-      return state.projects.find((project) => project.id === state.activeProjectId) || null;
-    }
-
-    function ensureActiveProject() {
-      if (!state.projects.length) {
-        const project = createProject("Project 1");
-        state.projects = [project];
-        state.activeProjectId = project.id;
-      }
-
-      let project = getActiveProject();
-      if (!project) {
-        state.activeProjectId = state.projects[0].id;
-        project = state.projects[0];
-      }
-
-      saveState();
-      return project;
-    }
-
-    function setStatus(text, hint, isError = false) {
       els.statusText.textContent = text;
       els.statusHint.textContent = hint;
       els.statusText.classList.toggle("status-error", isError);
@@ -516,54 +536,37 @@
     function extractHtml(text) {
       const fenced = text.match(/```html\s*([\s\S]*?)```/i);
       if (fenced) {
-        return fenced[1].trim();
-      }
-
-      const fullHtml = text.match(/<!DOCTYPE html>[\s\S]*<\/html>/i) || text.match(/<html[\s\S]*<\/html>/i);
-      if (fullHtml) {
-        return fullHtml[0].trim();
-      }
-
-      return text.trim();
+      render();
     }
 
-    function updateProject(projectId, updater) {
-      state.projects = state.projects.map((project) => {
-        if (project.id !== projectId) {
-          return project;
-        }
-        const next = updater({ ...project });
-        next.updatedAt = new Date().toISOString();
-        return next;
-      });
-      saveState();
-      render();
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text;
+      return div.innerHTML;
     }
 
     function renderProjects() {
       els.projectsList.innerHTML = "";
       state.projects
-        .slice()
-        .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
-        .forEach((project) => {
-          const card = document.createElement("button");
-          card.type = "button";
           card.className = `project-card${project.id === state.activeProjectId ? " active" : ""}`;
           card.innerHTML = `
             <h3>${escapeHtml(project.title)}</h3>
             <p class="project-meta">${project.url ? "Saved URL" : "No URL yet"}</p>
+            <p class="project-meta">${project.code ? "Saved code ready" : "No code yet"}</p>
           `;
           card.addEventListener("click", () => {
             state.activeProjectId = project.id;
             saveState();
             render();
             setStatus("Project opened", "You can paste a URL or code now.");
+            setStatus("Project opened", "Paste code below or continue editing.");
           });
           els.projectsList.appendChild(card);
         });
     }
 
     function renderWorkspace() {
+    function renderBuilder() {
       const project = ensureActiveProject();
       els.projectLabel.textContent = project.title;
       els.urlInput.value = project.url || "";
@@ -572,22 +575,27 @@
 
       if (project.renderedCode) {
         els.previewFrame.srcdoc = project.renderedCode;
-        els.previewFrame.hidden = false;
-        els.emptyPreview.hidden = true;
+      }
+    }
+
+    function renderChatkit() {
+      els.chatkitEndpointInput.value = state.chatkitEndpoint || "";
+
+      if (state.chatkitEndpoint) {
+        els.chatkitStatusText.innerHTML = `Saved endpoint: <code>${escapeHtml(state.chatkitEndpoint)}</code>`;
       } else {
-        els.previewFrame.hidden = true;
-        els.emptyPreview.hidden = false;
+        els.chatkitStatusText.textContent = "No ChatKit session endpoint saved yet.";
       }
     }
 
     function render() {
       renderProjects();
       renderWorkspace();
+      renderBuilder();
+      renderChatkit();
     }
 
     function createProjectFromButton() {
-      const project = createProject(`Project ${state.projects.length + 1}`);
-      state.projects.unshift(project);
       state.activeProjectId = project.id;
       saveState();
       render();
@@ -609,6 +617,7 @@
       });
 
       setStatus("URL loaded", "If the mini browser stays blank, that website is blocking iframe embedding.");
+      setStatus("Project created", "Paste your next HTML game into the code editor.");
     }
 
     function openUrlInNewTab() {
@@ -639,16 +648,15 @@
           return current;
         });
         setStatus("URL detected", "That text was a URL, so it was opened in the mini browser.");
+        setStatus("Code missing", "Paste HTML code first, then click Render.", true);
         return;
       }
 
-      const html = extractHtml(raw);
-      updateProject(project.id, (current) => {
-        current.code = raw;
         current.renderedCode = html;
         return current;
       });
       setStatus("Rendered", "Your pasted code was loaded into the preview.");
+      setStatus("Rendered", "Your pasted code was loaded into the center preview.");
     }
 
     function clearWorkspace() {
@@ -661,12 +669,31 @@
       });
       els.miniBrowserFrame.src = "about:blank";
       setStatus("Cleared", "URL, code, and preview were reset for this project.");
+      setStatus("Cleared", "The code editor and preview were reset for this project.");
     }
 
     function escapeHtml(text) {
       const div = document.createElement("div");
       div.textContent = text;
       return div.innerHTML;
+    function saveChatkitEndpoint() {
+      const endpoint = els.chatkitEndpointInput.value.trim();
+      state.chatkitEndpoint = endpoint;
+      saveState();
+      renderChatkit();
+
+      if (endpoint) {
+        setStatus("ChatKit endpoint saved", "Frontend layout is ready. Next connect this to a real backend session endpoint.");
+      } else {
+        setStatus("ChatKit endpoint removed", "Add a backend session endpoint when you are ready.", true);
+      }
+    }
+
+    function resetChatkitEndpoint() {
+      state.chatkitEndpoint = "";
+      saveState();
+      renderChatkit();
+      setStatus("ChatKit endpoint reset", "No ChatKit backend is connected right now.");
     }
 
     els.newProjectButton.addEventListener("click", createProjectFromButton);
@@ -681,10 +708,13 @@
         openUrlInMiniBrowser();
       }
     });
+    els.saveChatkitButton.addEventListener("click", saveChatkitEndpoint);
+    els.resetChatkitButton.addEventListener("click", resetChatkitEndpoint);
 
     ensureActiveProject();
     render();
     setStatus("Ready", "Paste a website URL or game code.");
+    setStatus("Ready", "ChatKit panel added. Paste code to render games in the middle.");
   </script>
 </body>
 </html>
