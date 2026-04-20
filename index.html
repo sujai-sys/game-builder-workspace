@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Game Builder Workspace</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0a0f1f;
+      --panel: #11182d;
+      --panel-soft: #18213b;
+      --panel-alt: #0d1427;
+      --border: rgba(255, 255, 255, 0.08);
+      --text: #edf2ff;
+      --muted: #90a0c2;
+      --accent: #55e0c6;
+      --accent-strong: #2fc5ab;
+      --danger: #ff7a7a;
+      --shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
+      --radius: 20px;
+      --sidebar: 260px;
+      --preview: minmax(360px, 1.1fr);
+      --tooling: minmax(520px, 1.4fr);
+      --font: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: var(--font);
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(85, 224, 198, 0.12), transparent 24%),
+        radial-gradient(circle at bottom right, rgba(67, 97, 238, 0.15), transparent 28%),
+        linear-gradient(145deg, #060912 0%, var(--bg) 50%, #0b1734 100%);
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: var(--sidebar) var(--tooling) var(--preview);
+      gap: 18px;
+      min-height: 100vh;
+      padding: 18px;
+    }
+
+    .panel {
+      background: rgba(17, 24, 45, 0.94);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      padding: 18px;
+      gap: 16px;
+    }
+
+    .title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin: 0;
+    }
+
+    h1 {
+      font-size: 1.05rem;
+    }
+
+    h2 {
+      font-size: 1rem;
+    }
+
+    p,
+    label,
+    .hint,
+    .project-meta {
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .button,
+    .ghost-button {
+      appearance: none;
+      border: 0;
+      border-radius: 14px;
+      font: inherit;
+      cursor: pointer;
+      transition: transform 0.16s ease, opacity 0.16s ease, background 0.16s ease;
+    }
+
+    .button:hover,
+    .ghost-button:hover {
+      transform: translateY(-1px);
+    }
+
+    .button {
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      color: #041411;
+      font-weight: 700;
+      padding: 12px 14px;
+    }
+
+    .ghost-button {
+      background: var(--panel-soft);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 11px 14px;
+    }
+
+    .projects {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .project-card {
+      width: 100%;
+      text-align: left;
+      border: 1px solid transparent;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.03);
+      padding: 14px;
+      color: var(--text);
+      cursor: pointer;
+      transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease;
+    }
+
+    .project-card.active {
+      border-color: rgba(85, 224, 198, 0.45);
+      background: rgba(85, 224, 198, 0.1);
+    }
+
+    .project-card:hover {
+      transform: translateX(2px);
+      border-color: rgba(255, 255, 255, 0.12);
+    }
+
+    .workspace {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      padding: 18px;
+    }
+
+    .status {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 14px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border);
+    }
+
+    .status strong {
+      font-size: 0.95rem;
+    }
+
+    .status-error {
+      color: var(--danger);
+    }
+
+    .tool-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+      min-height: 0;
+    }
+
+    .card {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 16px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border);
+    }
+
+    .card-header {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .action-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    input,
+    textarea {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: var(--panel-alt);
+      color: var(--text);
+      padding: 12px 13px;
+      font: inherit;
+      outline: none;
+    }
+
+    input:focus,
+    textarea:focus {
+      border-color: rgba(85, 224, 198, 0.4);
+      box-shadow: 0 0 0 4px rgba(85, 224, 198, 0.08);
+    }
+
+    textarea {
+      min-height: 260px;
+      resize: vertical;
+      font-family: Consolas, monospace;
+      font-size: 0.92rem;
+    }
+
+    .mini-browser {
+      width: 100%;
+      min-height: 360px;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: #020617;
+    }
+
+    .preview {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      padding: 18px;
+    }
+
+    .preview-frame {
+      width: 100%;
+      flex: 1;
+      min-height: 720px;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      background: #020617;
+    }
+
+    .empty-preview {
+      display: grid;
+      place-items: center;
+      min-height: 720px;
+      border: 1px dashed var(--border);
+      border-radius: 18px;
+      text-align: center;
+      padding: 30px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.04), transparent);
+    }
+
+    .empty-preview strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 1.8rem;
+    }
+
+    @media (max-width: 1200px) {
+      .app {
+        grid-template-columns: var(--sidebar) 1fr;
+        grid-template-areas:
+          "sidebar workspace"
+          "preview preview";
+      }
+
+      .sidebar {
+        grid-area: sidebar;
+      }
+
+      .workspace {
+        grid-area: workspace;
+      }
+
+      .preview {
+        grid-area: preview;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .app {
+        grid-template-columns: 1fr;
+        grid-template-areas:
+          "sidebar"
+          "workspace"
+          "preview";
+        padding: 12px;
+      }
+
+      .action-row {
+        flex-direction: column;
+      }
+
+      .button,
+      .ghost-button {
+        width: 100%;
+      }
+
+      .mini-browser,
+      .preview-frame,
+      .empty-preview {
+        min-height: 420px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="panel sidebar">
+      <div class="title-row">
+        <div>
+          <h1>Game Builder</h1>
+          <p>Projects</p>
+        </div>
+      </div>
+
+      <button class="button" id="newProjectButton" type="button">+ New Project</button>
+
+      <div class="projects" id="projectsList"></div>
+    </aside>
+
+    <main class="panel workspace">
+      <div class="status">
+        <div>
+          <strong id="statusText">Ready</strong>
+          <p id="statusHint">Paste a website URL or game code.</p>
+        </div>
+        <p id="projectLabel">No project selected</p>
+      </div>
+
+      <div class="tool-grid">
+        <section class="card">
+          <div class="card-header">
+            <h2>URL Section</h2>
+            <p>Paste a website URL here. If the website blocks embedding, use the new tab button.</p>
+          </div>
+          <div class="field">
+            <label for="urlInput">Website URL</label>
+            <input id="urlInput" type="url" placeholder="https://chatgpt.com/">
+          </div>
+          <div class="action-row">
+            <button class="button" id="openUrlButton" type="button">Open URL</button>
+            <button class="ghost-button" id="openNewTabButton" type="button">Open in New Tab</button>
+          </div>
+          <iframe class="mini-browser" id="miniBrowserFrame" title="Mini browser" sandbox="allow-scripts allow-forms allow-popups allow-same-origin"></iframe>
+          <p class="hint">Major AI websites like ChatGPT often block loading inside mini browser windows. If it stays blank, that is the site blocking iframe embedding.</p>
+        </section>
+
+        <section class="card">
+          <div class="card-header">
+            <h2>Programming Render</h2>
+            <p>Paste full HTML, a ```html block, or even a plain URL. Render will load it into the preview.</p>
+          </div>
+          <div class="field">
+            <label for="codeInput">HTML / CSS / JS</label>
+            <textarea id="codeInput" placeholder="Paste a full HTML document here..."></textarea>
+          </div>
+          <div class="action-row">
+            <button class="button" id="renderButton" type="button">Render</button>
+            <button class="ghost-button" id="clearButton" type="button">Clear</button>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <section class="panel preview">
+      <div class="card-header">
+        <h2>Game Preview</h2>
+        <p>The rendered game or app appears here.</p>
+      </div>
+      <div class="empty-preview" id="emptyPreview">
+        <div>
+          <strong>Preview Ready</strong>
+          <p>Paste game code and click Render.</p>
+        </div>
+      </div>
+      <iframe class="preview-frame" id="previewFrame" title="Game preview" sandbox="allow-scripts allow-pointer-lock" hidden></iframe>
+    </section>
+  </div>
+
+  <script>
+    const STORAGE_KEY = "game-builder-workspace-v2";
+
+    const els = {
+      newProjectButton: document.getElementById("newProjectButton"),
+      projectsList: document.getElementById("projectsList"),
+      statusText: document.getElementById("statusText"),
+      statusHint: document.getElementById("statusHint"),
+      projectLabel: document.getElementById("projectLabel"),
+      urlInput: document.getElementById("urlInput"),
+      openUrlButton: document.getElementById("openUrlButton"),
+      openNewTabButton: document.getElementById("openNewTabButton"),
+      miniBrowserFrame: document.getElementById("miniBrowserFrame"),
+      codeInput: document.getElementById("codeInput"),
+      renderButton: document.getElementById("renderButton"),
+      clearButton: document.getElementById("clearButton"),
+      emptyPreview: document.getElementById("emptyPreview"),
+      previewFrame: document.getElementById("previewFrame")
+    };
+
+    const state = loadState();
+
+    function createProject(title = "New Project") {
+      const now = new Date().toISOString();
+      return {
+        id: crypto.randomUUID(),
+        title,
+        updatedAt: now,
+        url: "",
+        code: "",
+        renderedCode: ""
+      };
+    }
+
+    function loadState() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+        const projects = Array.isArray(saved.projects) && saved.projects.length
+          ? saved.projects.map((project, index) => ({
+              id: project.id || crypto.randomUUID(),
+              title: project.title || `Project ${index + 1}`,
+              updatedAt: project.updatedAt || new Date().toISOString(),
+              url: project.url || "",
+              code: project.code || "",
+              renderedCode: project.renderedCode || ""
+            }))
+          : [createProject("Project 1")];
+
+        const activeProjectId = projects.some((project) => project.id === saved.activeProjectId)
+          ? saved.activeProjectId
+          : projects[0].id;
+
+        return { projects, activeProjectId };
+      } catch (error) {
+        return {
+          projects: [createProject("Project 1")],
+          activeProjectId: null
+        };
+      }
+    }
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        projects: state.projects,
+        activeProjectId: state.activeProjectId
+      }));
+    }
+
+    function getActiveProject() {
+      return state.projects.find((project) => project.id === state.activeProjectId) || null;
+    }
+
+    function ensureActiveProject() {
+      if (!state.projects.length) {
+        const project = createProject("Project 1");
+        state.projects = [project];
+        state.activeProjectId = project.id;
+      }
+
+      let project = getActiveProject();
+      if (!project) {
+        state.activeProjectId = state.projects[0].id;
+        project = state.projects[0];
+      }
+
+      saveState();
+      return project;
+    }
+
+    function setStatus(text, hint, isError = false) {
+      els.statusText.textContent = text;
+      els.statusHint.textContent = hint;
+      els.statusText.classList.toggle("status-error", isError);
+    }
+
+    function normalizeUrl(value) {
+      const trimmed = value.trim();
+      if (!trimmed) {
+        return "";
+      }
+      if (/^https?:\/\//i.test(trimmed)) {
+        return trimmed;
+      }
+      return `https://${trimmed}`;
+    }
+
+    function looksLikeUrl(value) {
+      return /^(https?:\/\/|www\.)\S+$/i.test(value.trim());
+    }
+
+    function extractHtml(text) {
+      const fenced = text.match(/```html\s*([\s\S]*?)```/i);
+      if (fenced) {
+        return fenced[1].trim();
+      }
+
+      const fullHtml = text.match(/<!DOCTYPE html>[\s\S]*<\/html>/i) || text.match(/<html[\s\S]*<\/html>/i);
+      if (fullHtml) {
+        return fullHtml[0].trim();
+      }
+
+      return text.trim();
+    }
+
+    function updateProject(projectId, updater) {
+      state.projects = state.projects.map((project) => {
+        if (project.id !== projectId) {
+          return project;
+        }
+        const next = updater({ ...project });
+        next.updatedAt = new Date().toISOString();
+        return next;
+      });
+      saveState();
+      render();
+    }
+
+    function renderProjects() {
+      els.projectsList.innerHTML = "";
+      state.projects
+        .slice()
+        .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
+        .forEach((project) => {
+          const card = document.createElement("button");
+          card.type = "button";
+          card.className = `project-card${project.id === state.activeProjectId ? " active" : ""}`;
+          card.innerHTML = `
+            <h3>${escapeHtml(project.title)}</h3>
+            <p class="project-meta">${project.url ? "Saved URL" : "No URL yet"}</p>
+          `;
+          card.addEventListener("click", () => {
+            state.activeProjectId = project.id;
+            saveState();
+            render();
+            setStatus("Project opened", "You can paste a URL or code now.");
+          });
+          els.projectsList.appendChild(card);
+        });
+    }
+
+    function renderWorkspace() {
+      const project = ensureActiveProject();
+      els.projectLabel.textContent = project.title;
+      els.urlInput.value = project.url || "";
+      els.codeInput.value = project.code || "";
+      els.miniBrowserFrame.src = project.url || "about:blank";
+
+      if (project.renderedCode) {
+        els.previewFrame.srcdoc = project.renderedCode;
+        els.previewFrame.hidden = false;
+        els.emptyPreview.hidden = true;
+      } else {
+        els.previewFrame.hidden = true;
+        els.emptyPreview.hidden = false;
+      }
+    }
+
+    function render() {
+      renderProjects();
+      renderWorkspace();
+    }
+
+    function createProjectFromButton() {
+      const project = createProject(`Project ${state.projects.length + 1}`);
+      state.projects.unshift(project);
+      state.activeProjectId = project.id;
+      saveState();
+      render();
+      setStatus("Project created", "Paste a URL or game code into the new project.");
+    }
+
+    function openUrlInMiniBrowser() {
+      const project = ensureActiveProject();
+      const url = normalizeUrl(els.urlInput.value);
+
+      if (!url) {
+        setStatus("URL missing", "Paste a website URL first.", true);
+        return;
+      }
+
+      updateProject(project.id, (current) => {
+        current.url = url;
+        return current;
+      });
+
+      setStatus("URL loaded", "If the mini browser stays blank, that website is blocking iframe embedding.");
+    }
+
+    function openUrlInNewTab() {
+      const url = normalizeUrl(els.urlInput.value);
+      if (!url) {
+        setStatus("URL missing", "Paste a website URL first.", true);
+        return;
+      }
+
+      window.open(url, "_blank", "noopener");
+      setStatus("Opened in new tab", "Use this when the mini browser is blocked.");
+    }
+
+    function renderCode() {
+      const project = ensureActiveProject();
+      const raw = els.codeInput.value.trim();
+
+      if (!raw) {
+        setStatus("Code missing", "Paste HTML code or a URL first.", true);
+        return;
+      }
+
+      if (looksLikeUrl(raw)) {
+        const url = normalizeUrl(raw);
+        updateProject(project.id, (current) => {
+          current.url = url;
+          current.code = raw;
+          return current;
+        });
+        setStatus("URL detected", "That text was a URL, so it was opened in the mini browser.");
+        return;
+      }
+
+      const html = extractHtml(raw);
+      updateProject(project.id, (current) => {
+        current.code = raw;
+        current.renderedCode = html;
+        return current;
+      });
+      setStatus("Rendered", "Your pasted code was loaded into the preview.");
+    }
+
+    function clearWorkspace() {
+      const project = ensureActiveProject();
+      updateProject(project.id, (current) => {
+        current.url = "";
+        current.code = "";
+        current.renderedCode = "";
+        return current;
+      });
+      els.miniBrowserFrame.src = "about:blank";
+      setStatus("Cleared", "URL, code, and preview were reset for this project.");
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    els.newProjectButton.addEventListener("click", createProjectFromButton);
+    els.openUrlButton.addEventListener("click", openUrlInMiniBrowser);
+    els.openNewTabButton.addEventListener("click", openUrlInNewTab);
+    els.renderButton.addEventListener("click", renderCode);
+    els.clearButton.addEventListener("click", clearWorkspace);
+
+    els.urlInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        openUrlInMiniBrowser();
+      }
+    });
+
+    ensureActiveProject();
+    render();
+    setStatus("Ready", "Paste a website URL or game code.");
+  </script>
+</body>
+</html>
